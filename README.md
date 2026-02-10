@@ -13,18 +13,38 @@ Cross-platform CLI tool for monitoring and searching the NVD CVE database. Works
 
 ## Installation
 
-### From source
+### Recommended: Using pipx (easiest)
+
+`pipx` installs CLI tools in isolated environments and makes them available globally. Best for macOS and modern Linux systems.
+
+```bash
+# Install pipx first (if not already installed)
+brew install pipx  # macOS
+# or: apt install pipx  # Debian/Ubuntu
+
+# Install cvewatch directly from GitHub
+pipx install git+https://github.com/sumesh2279/cvewatch.git
+```
+
+### From source (for development)
 
 ```bash
 git clone https://github.com/sumesh2279/cvewatch.git
 cd cvewatch
+pipx install .
+```
+
+Or if you prefer using pip with a virtual environment:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -e .
 ```
 
 ### From PyPI (after publishing)
 
 ```bash
-pip install cvewatch
+pipx install cvewatch
 ```
 
 ## Quick Start
