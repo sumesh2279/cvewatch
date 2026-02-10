@@ -143,3 +143,62 @@ class NVDClient:
             
             # Client-side delay to avoid rate limits
             time.sleep(random.uniform(PAGE_DELAY_MIN, PAGE_DELAY_MAX))
+    
+    def get_cve(self, cve_id: str) -> Dict[str, Any]:
+        """
+        Fetch a single CVE by ID using the cveId parameter.
+        
+        Returns the raw CVE object from NVD API.
+        Raises Exception if CVE not found or API error.
+        """
+        params = {"cveId": cve_id}
+        url = f"{NVD_API_BASE}?{urlencode(params)}"
+        self._log(f"GET {url}")
+        
+        for attempt in range(MAX_RETRIES):
+            try:
+                response = self.session.get(url, headers=self._build_headers())
+                
+                # Handle rate limiting
+                if response.status_code in (429, 503):
+                    if attempt < MAX_RETRIES - 1:
+                        delay = self._exponential_backoff(attempt)
+                        self._log(f"Rate limited (HTTP {response.status_code}), retrying in {delay:.2f}s...")
+                        time.sleep(delay)
+                        continue
+                    else:
+                        raise Exception(f"Rate limited after {MAX_RETRIES} retries")
+                
+                # Handle 404 specifically
+                if response.status_code == 404:
+                    raise Exception(f"CVE {cve_id} not found in NVD database")
+                
+                response.raise_for_status()
+                data = response.json()
+                
+                vulnerabilities = data.get("vulnerabilities", [])
+                if not vulnerabilities:
+                    raise Exception(f"CVE {cve_id} not found in response")
+                
+                return vulnerabilities[0]
+            
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 404:
+                    raise Exception(f"CVE {cve_id} not found in NVD database")
+                
+                if attempt < MAX_RETRIES - 1 and e.response.status_code >= 500:
+                    delay = self._exponential_backoff(attempt)
+                    self._log(f"Server error (HTTP {e.response.status_code}), retrying in {delay:.2f}s...")
+                    time.sleep(delay)
+                    continue
+                raise Exception(f"HTTP {e.response.status_code}: {e.response.text}")
+            
+            except (httpx.RequestError, httpx.TimeoutException) as e:
+                if attempt < MAX_RETRIES - 1:
+                    delay = self._exponential_backoff(attempt)
+                    self._log(f"Request error ({e}), retrying in {delay:.2f}s...")
+                    time.sleep(delay)
+                    continue
+                raise Exception(f"Request failed: {e}")
+        
+        raise Exception("Max retries exceeded")

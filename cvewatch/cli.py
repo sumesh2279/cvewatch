@@ -157,19 +157,14 @@ def cmd_show(args):
     client = NVDClient(api_key=api_key, debug=args.debug)
     
     try:
-        # Search for the specific CVE ID
-        # NVD API doesn't have direct CVE ID lookup, so we search with cveId parameter
-        found = False
-        for vuln_data in client.search_cves(query=args.cve_id, days=3650):  # Search last 10 years
-            record = normalize_cve(vuln_data)
-            if record['cve_id'].upper() == args.cve_id.upper():
-                format_single_cve(record)
-                found = True
-                break
+        # Fetch the CVE directly by ID
+        vuln_data = client.get_cve(args.cve_id)
         
-        if not found:
-            print(f"Error: CVE {args.cve_id} not found", file=sys.stderr)
-            sys.exit(1)
+        # Normalize to our standard format
+        record = normalize_cve(vuln_data)
+        
+        # Display in detailed format
+        format_single_cve(record)
     
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
