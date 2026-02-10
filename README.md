@@ -58,11 +58,21 @@ cvewatch search adobe --days 30
 # With filters
 cvewatch search adobe --days 30 --min-cvss 7.0 --severity critical high
 
+# Show full descriptions and all references
+cvewatch search adobe --days 30 --full
+
 # JSON output
 cvewatch search adobe --days 30 --json
 
 # CSV output
 cvewatch search adobe --days 30 --csv
+```
+
+### Show details for a specific CVE
+
+```bash
+# View full details for a single CVE
+cvewatch show CVE-2025-15556
 ```
 
 ### Watch for new CVEs
@@ -93,6 +103,7 @@ cvewatch search <query> --days <N> [options]
 - `--days <N>` - Days to look back (required)
 - `--min-cvss <score>` - Minimum CVSS score (e.g., 7.0)
 - `--severity <levels>` - Filter by severity (critical, high, medium, low)
+- `--full` - Show full descriptions and all references (table mode only)
 - `--json` - Output as NDJSON (one JSON object per line)
 - `--csv` - Output as CSV
 - `--debug` - Enable debug logging
@@ -123,6 +134,7 @@ cvewatch watch <query> --days <N> --every <duration> [options]
 - `--every <duration>` - Check interval (required): `30m`, `1h`, `6h`, `24h`, `1d`
 - `--min-cvss <score>` - Minimum CVSS score
 - `--severity <levels>` - Filter by severity
+- `--full` - Show full descriptions and all references (table mode only)
 - `--json` - Output as NDJSON
 - `--once` - Run one watch cycle and exit
 - `--debug` - Enable debug logging
@@ -137,6 +149,32 @@ cvewatch watch adobe --days 30 --every 6h
 
 # Monitor with filters
 cvewatch watch microsoft --days 7 --every 1h --min-cvss 7.0 --severity critical high
+```
+
+### `cvewatch show`
+
+Display full details for a specific CVE.
+
+**Usage:**
+```bash
+cvewatch show <CVE-ID>
+```
+
+**Description:**
+Shows complete information for a single CVE including:
+- Full description (not truncated)
+- All references with clickable links
+- CVSS score and severity
+- Published and last modified dates
+- Direct NVD link
+
+**Examples:**
+```bash
+# Show details for a specific CVE
+cvewatch show CVE-2025-15556
+
+# Show details for any CVE
+cvewatch show CVE-2024-12345
 ```
 
 ## Configuration
@@ -167,16 +205,21 @@ Watch mode stores seen CVE IDs in `~/.cvewatch/state.json`. This file is automat
 
 ### Table (default)
 
-Human-readable table with truncated descriptions.
+Human-readable table with truncated descriptions and clickable NVD links.
 
 ```
 CVE ID           Severity  CVSS  Published   Description
---------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
 CVE-2024-12345   Critical  9.8   2024-02-10  Buffer overflow in Adobe Reader...
+  → https://nvd.nist.gov/vuln/detail/CVE-2024-12345
+
 CVE-2024-12346   High      8.1   2024-02-09  Use-after-free in Adobe Flash...
+  → https://nvd.nist.gov/vuln/detail/CVE-2024-12346
 
 Total: 2 CVE(s)
 ```
+
+Use `--full` to show complete descriptions and all reference links.
 
 ### JSON (NDJSON)
 
