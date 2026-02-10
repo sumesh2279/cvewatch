@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cvewatch"
+version = "1.0.0"
+description = "Cross-platform CLI tool for monitoring NVD CVE database"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Your Name", email = "your.email@example.com" }
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Topic :: Security",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "httpx>=0.24.0",
+    "PyYAML>=6.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-httpx>=0.21.0",
+    "ruff>=0.1.0"
+]
+
+[project.scripts]
+cvewatch = "cvewatch.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/cvewatch"
+Repository = "https://github.com/yourusername/cvewatch"
+Issues = "https://github.com/yourusername/cvewatch/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cvewatch*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N"]
+ignore = []
