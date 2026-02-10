@@ -10,7 +10,7 @@ from .version import __version__
 from .config import load_nvd_api_key
 from .nvd import NVDClient
 from .normalize import normalize_cve, filter_record
-from .output import write_output
+from .output import write_output, format_single_cve
 from .state import WatchState, compute_query_hash
 
 
@@ -60,7 +60,7 @@ def cmd_search(args):
         elif args.csv:
             output_format = "csv"
         
-        write_output(records, format=output_format)
+        write_output(records, format=output_format, full=args.full)
     
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -129,7 +129,7 @@ def cmd_watch(args):
             # Output new CVEs
             if records:
                 output_format = "json" if args.json else "table"
-                write_output(records, format=output_format)
+                write_output(records, format=output_format, full=args.full)
             elif not args.once:
                 if args.debug:
                     print(f"[DEBUG] No new CVEs found", file=sys.stderr)
@@ -146,6 +146,31 @@ def cmd_watch(args):
     except KeyboardInterrupt:
         print("\nWatch interrupted by user.", file=sys.stderr)
         sys.exit(0)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_show(args):
+    """Execute show command to display full details for a single CVE."""
+    api_key = load_nvd_api_key()
+    client = NVDClient(api_key=api_key, debug=args.debug)
+    
+    try:
+        # Search for the specific CVE ID
+        # NVD API doesn't have direct CVE ID lookup, so we search with cveId parameter
+        found = False
+        for vuln_data in client.search_cves(query=args.cve_id, days=3650):  # Search last 10 years
+            record = normalize_cve(vuln_data)
+            if record['cve_id'].upper() == args.cve_id.upper():
+                format_single_cve(record)
+                found = True
+                break
+        
+        if not found:
+            print(f"Error: CVE {args.cve_id} not found", file=sys.stderr)
+            sys.exit(1)
+    
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
@@ -177,6 +202,7 @@ def main():
     )
     search_parser.add_argument("--json", action="store_true", help="Output as NDJSON")
     search_parser.add_argument("--csv", action="store_true", help="Output as CSV")
+    search_parser.add_argument("--full", action="store_true", help="Show full descriptions and references")
     
     # Watch command
     watch_parser = subparsers.add_parser("watch", help="Watch for new CVEs")
@@ -192,6 +218,11 @@ def main():
     )
     watch_parser.add_argument("--json", action="store_true", help="Output as NDJSON")
     watch_parser.add_argument("--once", action="store_true", help="Run one watch cycle and exit")
+    watch_parser.add_argument("--full", action="store_true", help="Show full descriptions and references")
+    
+    # Show command
+    show_parser = subparsers.add_parser("show", help="Show full details for a specific CVE")
+    show_parser.add_argument("cve_id", help="CVE ID (e.g., CVE-2024-12345)")
     
     args = parser.parse_args()
     
@@ -203,6 +234,8 @@ def main():
         cmd_search(args)
     elif args.command == "watch":
         cmd_watch(args)
+    elif args.command == "show":
+        cmd_show(args)
 
 
 if __name__ == "__main__":

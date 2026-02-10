@@ -6,7 +6,7 @@ import sys
 from typing import List, Dict, Any, TextIO
 
 
-def format_table(records: List[Dict[str, Any]], output: TextIO = sys.stdout):
+def format_table(records: List[Dict[str, Any]], output: TextIO = sys.stdout, full: bool = False):
     """Format records as a human-readable table."""
     if not records:
         output.write("No CVEs found.\n")
@@ -18,7 +18,7 @@ def format_table(records: List[Dict[str, Any]], output: TextIO = sys.stdout):
         "severity": max(len("Severity"), max(len(r["severity"]) for r in records)),
         "cvss": len("CVSS"),
         "published": len("Published"),
-        "description": 60  # Fixed width for description
+        "description": 60  # Fixed width for description (when not --full)
     }
     
     # Header
@@ -27,19 +27,20 @@ def format_table(records: List[Dict[str, Any]], output: TextIO = sys.stdout):
         f"{'Severity':<{col_widths['severity']}}  "
         f"{'CVSS':<{col_widths['cvss']}}  "
         f"{'Published':<{col_widths['published']}}  "
-        f"{'Description':<{col_widths['description']}}"
+        f"Description"
     )
     output.write(header + "\n")
-    output.write("-" * len(header) + "\n")
+    output.write("-" * 100 + "\n")
     
     # Rows
     for record in records:
         cvss_str = f"{record['cvss_score']:.1f}" if record['cvss_score'] is not None else "N/A"
         published_date = record['published'][:10] if record['published'] else "N/A"
+        nvd_url = f"https://nvd.nist.gov/vuln/detail/{record['cve_id']}"
         
-        # Truncate description
+        # Truncate description unless --full is set
         desc = record['description']
-        if len(desc) > col_widths['description']:
+        if not full and len(desc) > col_widths['description']:
             desc = desc[:col_widths['description']-3] + "..."
         
         row = (
@@ -50,8 +51,19 @@ def format_table(records: List[Dict[str, Any]], output: TextIO = sys.stdout):
             f"{desc}"
         )
         output.write(row + "\n")
+        
+        # Always show NVD link
+        output.write(f"  → {nvd_url}\n")
+        
+        # Show references if --full
+        if full and record.get('references'):
+            output.write(f"  References:\n")
+            for ref in record['references']:
+                output.write(f"    • {ref}\n")
+        
+        output.write("\n")
     
-    output.write(f"\nTotal: {len(records)} CVE(s)\n")
+    output.write(f"Total: {len(records)} CVE(s)\n")
 
 
 def format_ndjson(records: List[Dict[str, Any]], output: TextIO = sys.stdout):
@@ -76,11 +88,38 @@ def format_csv_output(records: List[Dict[str, Any]], output: TextIO = sys.stdout
         writer.writerow(row)
 
 
-def write_output(records: List[Dict[str, Any]], format: str = "table", output: TextIO = sys.stdout):
+def format_single_cve(record: Dict[str, Any], output: TextIO = sys.stdout):
+    """Format a single CVE with full details."""
+    output.write(f"\n{'='*80}\n")
+    output.write(f"CVE ID: {record['cve_id']}\n")
+    output.write(f"{'='*80}\n\n")
+    
+    # Basic info
+    output.write(f"Severity:      {record['severity']}\n")
+    cvss_str = f"{record['cvss_score']:.1f}" if record['cvss_score'] is not None else "N/A"
+    output.write(f"CVSS Score:    {cvss_str}\n")
+    output.write(f"Published:     {record['published']}\n")
+    output.write(f"Last Modified: {record['last_modified']}\n")
+    output.write(f"NVD Link:      https://nvd.nist.gov/vuln/detail/{record['cve_id']}\n\n")
+    
+    # Description
+    output.write("Description:\n")
+    output.write(f"{record['description']}\n\n")
+    
+    # References
+    if record.get('references'):
+        output.write(f"References ({len(record['references'])}):\n")
+        for ref in record['references']:
+            output.write(f"  • {ref}\n")
+    
+    output.write("\n")
+
+
+def write_output(records: List[Dict[str, Any]], format: str = "table", output: TextIO = sys.stdout, full: bool = False):
     """Write records in specified format."""
     if format == "json":
         format_ndjson(records, output)
     elif format == "csv":
         format_csv_output(records, output)
     else:
-        format_table(records, output)
+        format_table(records, output, full=full)
