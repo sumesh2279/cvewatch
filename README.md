@@ -16,7 +16,7 @@ Cross-platform CLI tool for monitoring and searching the NVD CVE database. Works
 ### From source
 
 ```bash
-git clone https://github.com/yourusername/cvewatch.git
+git clone https://github.com/sumesh2279/cvewatch.git
 cd cvewatch
 pip install -e .
 ```
@@ -241,5 +241,5 @@ Contributions welcome! Please open an issue or PR on GitHub.
 
 ## Support
 
-- **Issues**: https://github.com/yourusername/cvewatch/issues
-- **Documentation**: https://github.com/yourusername/cvewatch
+- **Issues**: https://github.com/sumesh2279/cvewatch/issues
+- **Documentation**: https://github.com/sumesh2279/cvewatch
